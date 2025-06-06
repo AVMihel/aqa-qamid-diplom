@@ -33,11 +33,11 @@ public class PaymentPage {
     }
 
     public void verifySuccessNotification() {
-        successNotification.waitUntil(visible, 15000);
+        successNotification.shouldBe(visible);;
     }
 
     public void verifyErrorNotification() {
-        errorNotification.waitUntil(visible, 15000);
+        errorNotification.shouldBe(visible);
     }
 
     public void verifyInvalidFormat() {

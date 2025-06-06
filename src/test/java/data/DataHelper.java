@@ -24,19 +24,19 @@ public class DataHelper {
     }
 
     public static String getApprovedCardNumber() {
-        return "4444 4444 4444 4441";
+        return "1111 2222 3333 4444"; // APPROVED карта
     }
 
     public static String getDeclinedCardNumber() {
-        return "4444 4444 4444 4442";
+        return "5555 6666 7777 8888"; // DECLINED карта
     }
 
     public static String getInvalidCardNumber() {
-        return "4444 4444 4444 4443";
+        return "1111 2222 3333 4445"; // Несуществующая карта
     }
 
     public static String getShortCardNumber() {
-        return "4444 4444 4444 444";
+        return "1111 2222 3333 444"; // Короткий номер (15 цифр)
     }
 
     public static String getMonth(int shift) {
@@ -44,7 +44,7 @@ public class DataHelper {
     }
 
     public static String getInvalidMonth() {
-        return "13";
+        return "13"; // Неверный месяц
     }
 
     public static String getYear(int shift) {
@@ -52,23 +52,23 @@ public class DataHelper {
     }
 
     public static String getInvalidYear() {
-        return "00";
+        return LocalDate.now().minusYears(1).format(DateTimeFormatter.ofPattern("yy")); // Прошлый год
     }
 
     public static String getHolder() {
-        return faker.name().fullName();
+        return faker.name().fullName().toUpperCase(); // Имя в верхнем регистре
     }
 
     public static String getInvalidHolder() {
-        return "Иван Иванов";
+        return "Иван Иванов"; // Кириллица
     }
 
     public static String getCVC() {
-        return String.format("%03d", new Random().nextInt(1000));
+        return String.format("%03d", new Random().nextInt(1000)); // 3 цифры
     }
 
     public static String getInvalidCVC() {
-        return String.format("%02d", new Random().nextInt(100));
+        return String.format("%02d", new Random().nextInt(100)); // 2 цифры
     }
 
     public static CardInfo getValidCardInfo() {
