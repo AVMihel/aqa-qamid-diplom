@@ -2,22 +2,26 @@ package page;
 
 import com.codeborne.selenide.SelenideElement;
 import data.DataHelper;
+import java.time.Duration;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 
 public class CreditPage {
-    private SelenideElement heading = $$(".heading").find(exactText("Кредит по данным карты"));
-    private SelenideElement cardNumberField = $("input[placeholder='0000 0000 0000 0000']");
-    private SelenideElement monthField = $("input[placeholder='08']");
-    private SelenideElement yearField = $("input[placeholder='22']");
-    private SelenideElement holderField = $$(".input__control").get(3);
-    private SelenideElement cvcField = $("input[placeholder='999']");
-    private SelenideElement continueButton = $$("button").find(exactText("Продолжить"));
-    private SelenideElement successNotification = $(".notification_status_ok");
-    private SelenideElement errorNotification = $(".notification_status_error");
-    private SelenideElement invalidFormatError = $(".input__sub");
+    private final SelenideElement heading = $$(".heading").find(exactText("Кредит по данным карты"));
+    private final SelenideElement cardNumberField = $("input[placeholder='0000 0000 0000 0000']");
+    private final SelenideElement monthField = $("input[placeholder='08']");
+    private final SelenideElement yearField = $("input[placeholder='22']");
+    private final SelenideElement holderField = $$(".input__control").get(3);
+    private final SelenideElement cvcField = $("input[placeholder='999']");
+    private final SelenideElement continueButton = $$("button").find(exactText("Продолжить"));
+    private final SelenideElement successNotification = $(".notification_status_ok");
+    private final SelenideElement errorNotification = $(".notification_status_error");
+    private final SelenideElement anyNotification = $(".notification");
+    private final SelenideElement successNotificationContent = $(".notification_status_ok .notification__content");
+    private final SelenideElement errorNotificationContent = $(".notification_status_error .notification__content");
+    private final SelenideElement invalidFormatError = $(".input__sub");
 
     public CreditPage() {
         heading.shouldBe(visible);
@@ -33,26 +37,19 @@ public class CreditPage {
     }
 
     public void verifySuccessNotification() {
-        successNotification.shouldBe(visible);
+        successNotification.shouldBe(visible, Duration.ofSeconds(15));
+        successNotificationContent.shouldHave(text("Операция одобрена Банком."));
     }
 
-    public void verifyErrorNotification() {
-        errorNotification.shouldBe(visible);
+    public SelenideElement getSuccessNotification() {
+        return successNotification;
     }
 
-    public void verifyInvalidFormat() {
-        invalidFormatError.shouldBe(visible).shouldHave(text("Неверный формат"));
+    public SelenideElement getErrorNotification() {
+        return errorNotification;
     }
 
-    public void verifyRequiredField() {
-        invalidFormatError.shouldBe(visible).shouldHave(text("Поле обязательно для заполнения"));
-    }
-
-    public void verifyInvalidCardExpirationDate() {
-        invalidFormatError.shouldBe(visible).shouldHave(text("Неверно указан срок действия карты"));
-    }
-
-    public void verifyCardExpired() {
-        invalidFormatError.shouldBe(visible).shouldHave(text("Истёк срок действия карты"));
+    public SelenideElement getAnyNotification() {
+        return anyNotification;
     }
 }

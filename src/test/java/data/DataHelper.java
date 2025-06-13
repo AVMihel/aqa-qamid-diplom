@@ -9,10 +9,8 @@ import java.util.Locale;
 import java.util.Random;
 
 public class DataHelper {
-    private DataHelper() {
-    }
-
-    public static Faker faker = new Faker(new Locale("en"));
+    private static final Faker fakerEn = new Faker(new Locale("en"));
+    private static final Faker fakerRu = new Faker(new Locale("ru"));
 
     @Value
     public static class CardInfo {
@@ -24,19 +22,19 @@ public class DataHelper {
     }
 
     public static String getApprovedCardNumber() {
-        return "1111 2222 3333 4444"; // APPROVED карта
+        return "1111 2222 3333 4444";
     }
 
     public static String getDeclinedCardNumber() {
-        return "5555 6666 7777 8888"; // DECLINED карта
+        return "5555 6666 7777 8888";
     }
 
     public static String getInvalidCardNumber() {
-        return "1111 2222 3333 4445"; // Несуществующая карта
+        return "1111 2222 3333 4445";
     }
 
     public static String getShortCardNumber() {
-        return "1111 2222 3333 444"; // Короткий номер (15 цифр)
+        return "1111 2222 3333 444";
     }
 
     public static String getMonth(int shift) {
@@ -44,7 +42,7 @@ public class DataHelper {
     }
 
     public static String getInvalidMonth() {
-        return "13"; // Неверный месяц
+        return "13";
     }
 
     public static String getYear(int shift) {
@@ -52,30 +50,34 @@ public class DataHelper {
     }
 
     public static String getInvalidYear() {
-        return LocalDate.now().minusYears(1).format(DateTimeFormatter.ofPattern("yy")); // Прошлый год
+        return LocalDate.now().minusYears(1).format(DateTimeFormatter.ofPattern("yy"));
     }
 
-    public static String getHolder() {
-        return faker.name().fullName().toUpperCase(); // Имя в верхнем регистре
+    public static String getLatinHolder() {
+        return fakerEn.name().fullName().toUpperCase();
+    }
+
+    public static String getCyrillicHolder() {
+        return fakerRu.name().fullName();
     }
 
     public static String getInvalidHolder() {
-        return "Иван Иванов"; // Кириллица
+        return "123!@#";
     }
 
     public static String getCVC() {
-        return String.format("%03d", new Random().nextInt(1000)); // 3 цифры
+        return String.format("%03d", new Random().nextInt(1000));
     }
 
     public static String getInvalidCVC() {
-        return String.format("%02d", new Random().nextInt(100)); // 2 цифры
+        return String.format("%02d", new Random().nextInt(100));
     }
 
     public static CardInfo getValidCardInfo() {
-        return new CardInfo(getApprovedCardNumber(), getMonth(1), getYear(1), getHolder(), getCVC());
+        return new CardInfo(getApprovedCardNumber(), getMonth(1), getYear(1), getLatinHolder(), getCVC());
     }
 
     public static CardInfo getDeclinedCardInfo() {
-        return new CardInfo(getDeclinedCardNumber(), getMonth(1), getYear(1), getHolder(), getCVC());
+        return new CardInfo(getDeclinedCardNumber(), getMonth(1), getYear(1), getLatinHolder(), getCVC());
     }
 }

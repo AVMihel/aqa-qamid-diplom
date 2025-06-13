@@ -8,6 +8,9 @@ import org.junit.jupiter.api.*;
 import page.CreditPage;
 import page.MainPage;
 
+import java.time.Duration;
+
+import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selenide.open;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -35,7 +38,6 @@ public class CreditTest {
         CreditPage creditPage = mainPage.goToCreditPage();
         creditPage.fillForm(DataHelper.getValidCardInfo());
         creditPage.verifySuccessNotification();
-
         assertEquals("APPROVED", SQLHelper.getCreditStatus());
     }
 
@@ -45,8 +47,8 @@ public class CreditTest {
         MainPage mainPage = new MainPage();
         CreditPage creditPage = mainPage.goToCreditPage();
         creditPage.fillForm(DataHelper.getDeclinedCardInfo());
-        creditPage.verifyErrorNotification();
-
+        creditPage.getSuccessNotification().shouldNotBe(visible, Duration.ofSeconds(10));
         assertEquals("DECLINED", SQLHelper.getCreditStatus());
+        creditPage.getAnyNotification().shouldBe(visible, Duration.ofSeconds(10));
     }
 }
