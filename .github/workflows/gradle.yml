@@ -1,4 +1,4 @@
-name: Java CI with Gradle (MySQL)
+name: Java CI with Gradle
 
 on: [push, pull_request]
 
@@ -8,48 +8,60 @@ jobs:
     
     services:
       mysql:
-        image: mysql:5.7
+        image: mysql:8.0.41
         env:
-          MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: app
           MYSQL_USER: app
-          MYSQL_PASSWORD: app
+          MYSQL_PASSWORD: pass
+          MYSQL_ROOT_PASSWORD: root
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping -uroot -proot" --health-interval=10s --health-timeout=5s --health-retries=5
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up JDK 17
+      - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '11'
           distribution: 'temurin'
           
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
         
-      - name: Verify MySQL is running
+      - name: Wait for MySQL
         run: |
-          echo "Checking MySQL connection..."
-          docker run --network host --rm mysql:5.7 mysql -h127.0.0.1 -P3306 -uroot -proot -e "SELECT 1" || exit 1
-          echo "MySQL is ready!"
+          for i in {1..10}; do
+            mysql -h127.0.0.1 -P3306 -uapp -ppass -e "SELECT 1" && break
+            sleep 3
+          done || exit 1
         
       - name: Start SUT
         run: java -jar ./artifacts/aqa-shop.jar &
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/app
+          SPRING_DATASOURCE_USERNAME: app
+          SPRING_DATASOURCE_PASSWORD: pass
         
-      - name: Wait for SUT initialization
-        run: sleep 15
+      - name: Run Tests
+        run: >
+          ./gradlew clean test 
+          -Ddb.url=jdbc:mysql://127.0.0.1:3306/app 
+          -Ddb.user=app 
+          -Ddb.password=pass 
+          -Dselenide.headless=true 
+          --info
         
-      - name: Run Tests with MySQL
-        run: ./gradlew clean test -Ddb.url=jdbc:mysql://127.0.0.1:3306/app -Dselenide.headless=true --info
-        
-      - name: Archive test results
+      - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports
+          name: test-results
           path: |
             build/test-results/**
             build/reports/tests/**
