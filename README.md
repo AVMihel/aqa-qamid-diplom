@@ -31,3 +31,5 @@
 
 Сгенерируйте и откройте отчёт Allure:
   ./gradlew allureServe
+
+[![Java CI with Gradle](https://github.com/AVMihel/aqa-qamid-diplom/actions/workflows/gradle.yml/badge.svg)](https://github.com/AVMihel/aqa-qamid-diplom/actions/workflows/gradle.yml)
