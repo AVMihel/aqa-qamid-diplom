@@ -16,7 +16,7 @@ jobs:
           MYSQL_PASSWORD: app
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: --health-cmd="mysqladmin ping -uroot -proot" --health-interval=10s --health-timeout=5s --health-retries=5
 
     steps:
       - uses: actions/checkout@v4
@@ -30,16 +30,20 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
         
+      - name: Verify MySQL is running
+        run: |
+          echo "Checking MySQL connection..."
+          docker run --network host --rm mysql:5.7 mysql -h127.0.0.1 -P3306 -uroot -proot -e "SELECT 1" || exit 1
+          echo "MySQL is ready!"
+        
       - name: Start SUT
         run: java -jar ./artifacts/aqa-shop.jar &
         
-      - name: Wait for services
-        run: |
-          sleep 15
-          docker exec mysql mysql -uapp -papp -e "SELECT 1" app || exit 1
+      - name: Wait for SUT initialization
+        run: sleep 15
         
       - name: Run Tests with MySQL
-        run: ./gradlew clean test -Ddb.url=jdbc:mysql://localhost:3306/app -Dselenide.headless=true --info
+        run: ./gradlew clean test -Ddb.url=jdbc:mysql://127.0.0.1:3306/app -Dselenide.headless=true --info
         
       - name: Archive test results
         if: always()
