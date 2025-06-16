@@ -39,19 +39,14 @@ jobs:
           docker exec mysql mysql -uapp -papp -e "SELECT 1" app || exit 1
         
       - name: Run Tests with MySQL
-        continue-on-error: true
         run: ./gradlew clean test -Ddb.url=jdbc:mysql://localhost:3306/app -Dselenide.headless=true --info
         
-      - name: Generate Allure Report
+      - name: Archive test results
         if: always()
-        run: |
-          ./gradlew allureReport
-          mkdir -p allure-results
-          cp -r build/allure-results allure-results
-          
-      - name: Upload Allure Report
         uses: actions/upload-artifact@v4
         with:
-          name: allure-report
-          path: allure-results
+          name: test-reports
+          path: |
+            build/test-results/**
+            build/reports/tests/**
           retention-days: 3
