@@ -28,158 +28,382 @@ public class PaymentTest {
         open("http://localhost:8080");
     }
 
+    private void logTestData(DataHelper.CardInfo cardInfo) {
+        System.out.println("\n=== TEST DATA USED ===");
+        System.out.println("Card number: " + maskCardNumber(cardInfo.getNumber()));
+        System.out.println("Month: " + cardInfo.getMonth());
+        System.out.println("Year: " + cardInfo.getYear());
+        System.out.println("Cardholder: " + cardInfo.getHolder());
+        System.out.println("CVC: " + (cardInfo.getCvc().isEmpty() ? "<empty>" : "***"));
+        System.out.println("=====================\n");
+    }
+
+    private String maskCardNumber(String cardNumber) {
+        if (cardNumber == null || cardNumber.isEmpty()) {
+            return "<empty>";
+        }
+        if (cardNumber.length() <= 8) {
+            return cardNumber;
+        }
+        return cardNumber.substring(0, 4) + " **** **** " + cardNumber.substring(cardNumber.length() - 4);
+    }
+
+    private void executeTestWithLogging(DataHelper.CardInfo cardInfo, Runnable testAction) {
+        try {
+            testAction.run();
+        } catch (AssertionError | Exception e) {
+            logTestData(cardInfo);
+            throw e;
+        }
+    }
+
     @Test
     @DisplayName("Успешная оплата одобренной картой с именем на латинице")
     void shouldSuccessPaymentWithApprovedCard() {
-        PaymentPage paymentPage = new MainPage().goToPaymentPage();
-        paymentPage.fillForm(new DataHelper.CardInfo(
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
                 DataHelper.getApprovedCardNumber(),
                 DataHelper.getMonth(1),
                 DataHelper.getYear(1),
                 DataHelper.getLatinHolder(),
-                DataHelper.getCVC()));
+                DataHelper.getCVC());
 
-        paymentPage.verifySuccessNotification();
-        assertEquals("APPROVED", SQLHelper.getPaymentStatus());
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifySuccessNotification();
+            assertEquals("APPROVED", SQLHelper.getPaymentStatus());
+        });
     }
 
     @Test
     @DisplayName("Отказ в оплате отклоненной картой")
     void shouldFailPaymentWithDeclinedCard() {
-        PaymentPage paymentPage = new MainPage().goToPaymentPage();
-        paymentPage.fillForm(new DataHelper.CardInfo(
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
                 DataHelper.getDeclinedCardNumber(),
                 DataHelper.getMonth(1),
                 DataHelper.getYear(1),
                 DataHelper.getLatinHolder(),
-                DataHelper.getCVC()));
+                DataHelper.getCVC());
 
-        paymentPage.verifyErrorNotification();
-        assertEquals("DECLINED", SQLHelper.getPaymentStatus());
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyErrorNotification();
+            assertEquals("DECLINED", SQLHelper.getPaymentStatus());
+        });
     }
 
     @Test
-    @DisplayName("Успешная оплата с кириллическим именем владельца")
-    void shouldAcceptCyrillicHolder() {
-        PaymentPage paymentPage = new MainPage().goToPaymentPage();
-        paymentPage.fillForm(new DataHelper.CardInfo(
+    @DisplayName("Успешная оплата с минимально допустимым сроком действия карты")
+    void shouldSuccessPaymentWithMinValidExpiryDate() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
                 DataHelper.getApprovedCardNumber(),
-                DataHelper.getMonth(1),
-                DataHelper.getYear(1),
-                DataHelper.getCyrillicHolder(),
-                DataHelper.getCVC()));
-
-        paymentPage.verifyHolderAcceptsInput();
-    }
-
-    @Test
-    @DisplayName("Отправка формы с недопустимыми символами в имени")
-    void shouldShowErrorWithInvalidHolder() {
-        PaymentPage paymentPage = new MainPage().goToPaymentPage();
-        paymentPage.fillForm(new DataHelper.CardInfo(
-                DataHelper.getApprovedCardNumber(),
-                DataHelper.getMonth(1),
-                DataHelper.getYear(1),
-                DataHelper.getInvalidHolder(),
-                DataHelper.getCVC()));
-
-        paymentPage.verifyInvalidHolderFormat();
-    }
-
-    @Test
-    @DisplayName("Отправка формы с несуществующим номером карты")
-    void shouldFailWithInvalidCardNumber() {
-        PaymentPage paymentPage = new MainPage().goToPaymentPage();
-        paymentPage.fillForm(new DataHelper.CardInfo(
-                DataHelper.getInvalidCardNumber(),
-                DataHelper.getMonth(1),
-                DataHelper.getYear(1),
+                DataHelper.getMonth(0),
+                DataHelper.getYear(0),
                 DataHelper.getLatinHolder(),
-                DataHelper.getCVC()));
+                DataHelper.getCVC());
 
-        paymentPage.verifyErrorNotification();
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifySuccessNotification();
+            assertEquals("APPROVED", SQLHelper.getPaymentStatus());
+        });
     }
 
-    @Test
-    @DisplayName("Отправка формы с коротким номером карты")
-    void shouldShowErrorWithShortCardNumber() {
-        PaymentPage paymentPage = new MainPage().goToPaymentPage();
-        paymentPage.fillForm(new DataHelper.CardInfo(
-                DataHelper.getShortCardNumber(),
-                DataHelper.getMonth(1),
-                DataHelper.getYear(1),
-                DataHelper.getLatinHolder(),
-                DataHelper.getCVC()));
-
-        paymentPage.verifyInvalidFormat();
-    }
+    // Остальные тесты оформляем аналогично:
 
     @Test
-    @DisplayName("Отправка формы с неверным месяцем")
-    void shouldShowErrorWithInvalidMonth() {
-        PaymentPage paymentPage = new MainPage().goToPaymentPage();
-        paymentPage.fillForm(new DataHelper.CardInfo(
-                DataHelper.getApprovedCardNumber(),
-                DataHelper.getInvalidMonth(),
-                DataHelper.getYear(1),
-                DataHelper.getLatinHolder(),
-                DataHelper.getCVC()));
-
-        paymentPage.verifyInvalidCardExpirationDate();
-    }
-
-    @Test
-    @DisplayName("Отправка формы с истекшим сроком действия карты")
-    void shouldShowErrorWithExpiredCard() {
-        PaymentPage paymentPage = new MainPage().goToPaymentPage();
-        paymentPage.fillForm(new DataHelper.CardInfo(
+    @DisplayName("Отказ в оплате с истекшим сроком действия карты (месяц)")
+    void shouldFailPaymentWithExpiredMonth() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
                 DataHelper.getApprovedCardNumber(),
                 DataHelper.getMonth(-1),
                 DataHelper.getYear(0),
                 DataHelper.getLatinHolder(),
-                DataHelper.getCVC()));
+                DataHelper.getCVC());
 
-        paymentPage.verifyCardExpired();
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyCardExpired();
+        });
     }
 
     @Test
-    @DisplayName("Отправка формы с неверным годом")
-    void shouldShowErrorWithInvalidYear() {
-        PaymentPage paymentPage = new MainPage().goToPaymentPage();
-        paymentPage.fillForm(new DataHelper.CardInfo(
+    @DisplayName("Отказ в оплате с неверным форматом года (одна цифра)")
+    void shouldFailPaymentWithSingleDigitYear() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
                 DataHelper.getApprovedCardNumber(),
                 DataHelper.getMonth(1),
-                DataHelper.getInvalidYear(),
+                "1",
                 DataHelper.getLatinHolder(),
-                DataHelper.getCVC()));
+                DataHelper.getCVC());
 
-        paymentPage.verifyInvalidCardExpirationDate();
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyInvalidFormat();
+        });
     }
 
     @Test
-    @DisplayName("Отправка формы с коротким CVC")
-    void shouldShowErrorWithShortCVC() {
-        PaymentPage paymentPage = new MainPage().goToPaymentPage();
-        paymentPage.fillForm(new DataHelper.CardInfo(
+    @DisplayName("Отказ в оплате с истекшим сроком действия карты (год)")
+    void shouldFailPaymentWithExpiredYear() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
+                DataHelper.getApprovedCardNumber(),
+                DataHelper.getMonth(0),
+                DataHelper.getYear(-1),
+                DataHelper.getLatinHolder(),
+                DataHelper.getCVC());
+
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyCardExpired();
+        });
+    }
+
+    @Test
+    @DisplayName("Отказ в оплате с неверным форматом месяца (13)")
+    void shouldFailPaymentWithInvalidMonth() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
+                DataHelper.getApprovedCardNumber(),
+                DataHelper.getInvalidMonth(),
+                DataHelper.getYear(1),
+                DataHelper.getLatinHolder(),
+                DataHelper.getCVC());
+
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyInvalidCardExpirationDate();
+        });
+    }
+
+    @Test
+    @DisplayName("Отказ в оплате с пустым номером карты")
+    void shouldFailPaymentWithEmptyCardNumber() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
+                "",
+                DataHelper.getMonth(1),
+                DataHelper.getYear(1),
+                DataHelper.getLatinHolder(),
+                DataHelper.getCVC());
+
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyAnyErrorMessage("Неверный формат", "Поле обязательно для заполнения");
+        });
+    }
+
+    @Test
+    @DisplayName("Отказ в оплате с пустым полем месяца")
+    void shouldFailPaymentWithEmptyMonth() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
+                DataHelper.getApprovedCardNumber(),
+                "",
+                DataHelper.getYear(1),
+                DataHelper.getLatinHolder(),
+                DataHelper.getCVC());
+
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyAnyErrorMessage("Неверный формат", "Поле обязательно для заполнения");
+        });
+    }
+
+    @Test
+    @DisplayName("Отказ в оплате с пустым полем года")
+    void shouldFailPaymentWithEmptyYear() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
+                DataHelper.getApprovedCardNumber(),
+                DataHelper.getMonth(1),
+                "",
+                DataHelper.getLatinHolder(),
+                DataHelper.getCVC());
+
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyAnyErrorMessage("Неверный формат", "Поле обязательно для заполнения");
+        });
+    }
+
+    @Test
+    @DisplayName("Отказ в оплате с пустым полем владельца")
+    void shouldFailPaymentWithEmptyHolder() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
+                DataHelper.getApprovedCardNumber(),
+                DataHelper.getMonth(1),
+                DataHelper.getYear(1),
+                "",
+                DataHelper.getCVC());
+
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyAnyErrorMessage("Поле обязательно для заполнения");
+        });
+    }
+
+    @Test
+    @DisplayName("Отказ в оплате с пустым полем CVC")
+    void shouldFailPaymentWithEmptyCVC() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
                 DataHelper.getApprovedCardNumber(),
                 DataHelper.getMonth(1),
                 DataHelper.getYear(1),
                 DataHelper.getLatinHolder(),
-                DataHelper.getInvalidCVC()));
+                "");
 
-        paymentPage.verifyInvalidFormat();
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyAnyErrorMessage("Неверный формат", "Поле обязательно для заполнения");
+        });
     }
 
     @Test
-    @DisplayName("Отправка пустой формы")
-    void shouldShowErrorsWithEmptyForm() {
-        PaymentPage paymentPage = new MainPage().goToPaymentPage();
-        paymentPage.fillForm(new DataHelper.CardInfo("", "", "", "", ""));
+    @DisplayName("Отказ в оплате с несуществующим номером карты")
+    void shouldFailPaymentWithNonExistentCard() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
+                DataHelper.getInvalidCardNumber(),
+                DataHelper.getMonth(1),
+                DataHelper.getYear(1),
+                DataHelper.getLatinHolder(),
+                DataHelper.getCVC());
 
-        // Проверяем оба возможных сообщения
-        paymentPage.verifyAnyErrorMessage(
-                "Неверный формат",
-                "Поле обязательно для заполнения"
-        );
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyErrorNotification();
+        });
+    }
+
+    @Test
+    @DisplayName("Отказ в оплате с неполным номером карты")
+    void shouldFailPaymentWithShortCardNumber() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
+                DataHelper.getShortCardNumber(),
+                DataHelper.getMonth(1),
+                DataHelper.getYear(1),
+                DataHelper.getLatinHolder(),
+                DataHelper.getCVC());
+
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyInvalidFormat();
+        });
+    }
+
+    @Test
+    @DisplayName("Успешная оплата при вводе кириллического имени владельца")
+    void shouldAcceptPaymentWithCyrillicHolder() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
+                DataHelper.getApprovedCardNumber(),
+                DataHelper.getMonth(1),
+                DataHelper.getYear(1),
+                DataHelper.getCyrillicHolder(), // Кириллическое имя
+                DataHelper.getCVC());
+
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+
+            paymentPage.verifyHolderAcceptsInput();
+            paymentPage.verifySuccessNotification();
+
+            assertEquals("APPROVED", SQLHelper.getPaymentStatus());
+        });
+    }
+
+    @Test
+    @DisplayName("Оплата с минимальным кириллическим именем (2 символа)")
+    void shouldAcceptMinimalCyrillicName() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
+                DataHelper.getApprovedCardNumber(),
+                DataHelper.getMonth(1),
+                DataHelper.getYear(1),
+                "Ян",
+                DataHelper.getCVC());
+
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyHolderAcceptsInput();
+            paymentPage.verifySuccessNotification();
+        });
+    }
+
+    @Test
+    @DisplayName("Отказ в оплате с недопустимыми символами в имени владельца")
+    void shouldFailPaymentWithInvalidHolder() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
+                DataHelper.getApprovedCardNumber(),
+                DataHelper.getMonth(1),
+                DataHelper.getYear(1),
+                DataHelper.getInvalidHolder(),
+                DataHelper.getCVC());
+
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyInvalidHolderFormat();
+        });
+    }
+
+    @Test
+    @DisplayName("Отказ в оплате с неполным CVC")
+    void shouldFailPaymentWithShortCVC() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
+                DataHelper.getApprovedCardNumber(),
+                DataHelper.getMonth(1),
+                DataHelper.getYear(1),
+                DataHelper.getLatinHolder(),
+                DataHelper.getInvalidCVC());
+
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyInvalidFormat();
+        });
+    }
+
+    @Test
+    @DisplayName("Отказ в оплате с нулевым месяцем")
+    void shouldFailPaymentWithZeroMonth() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
+                DataHelper.getApprovedCardNumber(),
+                "00",
+                DataHelper.getYear(1),
+                DataHelper.getLatinHolder(),
+                DataHelper.getCVC());
+
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyInvalidCardExpirationDate();
+        });
+    }
+
+    @Test
+    @DisplayName("Отказ в оплате с годом больше текущего на 6 лет")
+    void shouldFailPaymentWithTooDistantYear() {
+        DataHelper.CardInfo cardInfo = new DataHelper.CardInfo(
+                DataHelper.getApprovedCardNumber(),
+                DataHelper.getMonth(1),
+                DataHelper.getYear(6),
+                DataHelper.getLatinHolder(),
+                DataHelper.getCVC());
+
+        executeTestWithLogging(cardInfo, () -> {
+            PaymentPage paymentPage = new MainPage().goToPaymentPage();
+            paymentPage.fillForm(cardInfo);
+            paymentPage.verifyInvalidCardExpirationDate();
+        });
     }
 }

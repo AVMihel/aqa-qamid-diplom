@@ -80,4 +80,6 @@ public class DataHelper {
     public static CardInfo getDeclinedCardInfo() {
         return new CardInfo(getDeclinedCardNumber(), getMonth(1), getYear(1), getLatinHolder(), getCVC());
     }
+
+
 }
