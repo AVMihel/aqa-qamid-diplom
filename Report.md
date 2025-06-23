@@ -102,3 +102,5 @@
 
 **Приложения**:
 1. Allure-отчёт
+   ![Screenshot_2](https://github.com/user-attachments/assets/53fd4ac0-8c65-4f55-aa92-d529b80c9fc8)
+
