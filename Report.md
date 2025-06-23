@@ -39,36 +39,30 @@
 1. **DECLINED карта** (Критический)
    - Тест: `shouldFailPaymentWithDeclinedCard`
    - Ожидалось: статус `DECLINED`
-   - Фактически: статус `APPROVED`
-   - Скриншот: [1750665984981.3.png]
+   - Фактически: статус `APPROVED`  
 
 2. **Невалидный владелец** (Высокий)
    - Тест: `shouldFailWithInvalidHolder`
    - Ожидалось: сообщение об ошибке
-   - Ошибка: `NoSuchElementException` (не найден элемент `.input__sub`)
-   - Скриншот: [1750665984981.3.png]
+   - Ошибка: `NoSuchElementException` (не найден элемент `.input__sub`) 
 
 3. **Нулевой месяц** (Высокий)
    - Тест: `shouldFailWithZeroMonth`
-   - Ошибка: аналогично предыдущей
-   - Скриншот: [1750666046556.4.png]
+   - Ошибка: аналогично предыдущей   
 
 #### 2.2.2. Кредитные операции (CreditTest)
 1. **DECLINED карта** (Критический)
    - Тест: `shouldFailCreditWithDeclinedCard`
    - Ожидалось: уведомление об ошибке
-   - Фактически: уведомление скрыто (`displayed:false`)
-   - Скриншот: [1750665977487.2.png]
+   - Фактически: уведомление скрыто (`displayed:false`)   
 
 2. **Невалидный владелец** (Высокий)
    - Тест: `shouldFailCreditWithInvalidHolder`
-   - Ошибка: `NoSuchElementException`
-   - Скриншот: [1750665943408.0.png]
+   - Ошибка: `NoSuchElementException`   
 
 3. **Нулевой месяц** (Высокий)
    - Тест: `shouldFailCreditWithZeroMonth`
-   - Ошибка: аналогично предыдущей
-   - Скриншот: [1750665949807.1.png]
+   - Ошибка: аналогично предыдущей   
 
 ## 3. Анализ проблем
 
